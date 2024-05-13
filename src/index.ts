@@ -1,26 +1,11 @@
 import fastify, { FastifyInstance, RouteShorthandOptions } from "fastify";
 import { Server, IncomingMessage, ServerResponse } from "http";
 
+import { root } from "./routes/root.js";
+
 const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({});
 
-const opts: RouteShorthandOptions = {
-  schema: {
-    response: {
-      200: {
-        type: "object",
-        properties: {
-          pong: {
-            type: "string",
-          },
-        },
-      },
-    },
-  },
-};
-
-server.get("/ping", opts, async (request, reply) => {
-  return { pong: "it worked!" };
-});
+server.register(root);
 
 const start = async () => {
   try {
