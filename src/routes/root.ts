@@ -3,6 +3,19 @@ import { items, item } from "../types/index.js";
 import { FastifyInstance } from "fastify";
 
 import { redis } from "../lib/redis.js";
+import { pool } from "../lib/pg.js";
+
+const opts = {
+  schema: {
+    body: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        withdrawalAmount: { type: "number" },
+      },
+    },
+  },
+};
 
 export const root = async (fastify: FastifyInstance) => {
   fastify.get("/", async (_, reply) => {
@@ -62,6 +75,45 @@ export const root = async (fastify: FastifyInstance) => {
       await redis.expire("csItems", 300);
 
       return computedValue;
+    } catch (error) {
+      reply.status(500).send(error);
+    }
+  });
+
+  fastify.patch("/", opts, async (request, reply) => {
+    try {
+      const client = await pool.connect();
+
+      const { id, withdrawalAmount } = request.body as {
+        id: number;
+        withdrawalAmount: number;
+      };
+
+      const users = await client.query(
+        `SELECT balance
+        FROM users
+        WHERE id = $1;`,
+        [id],
+      );
+
+      if (users && users.rows[0].balance >= withdrawalAmount) {
+        client.query(
+          `
+          UPDATE users
+          SET balance = $1
+          WHERE id = $2;
+        `,
+          [users.rows[0].balance - withdrawalAmount, id],
+        );
+      } else {
+        reply.status(406).send({ description: "Insufficient funds" });
+      }
+
+      pool.end();
+      return {
+        id: id,
+        balance: users.rows[0].balance - withdrawalAmount,
+      };
     } catch (error) {
       reply.status(500).send(error);
     }
