@@ -15,5 +15,5 @@
 
 ## example .env file
 
-REDIS_URL = redis://
+REDIS_URL = redis://  <br /> 
 POSTGRES_URL="postgres://
