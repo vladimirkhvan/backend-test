@@ -40,7 +40,7 @@ async function main() {
 
   await seedUsers(client);
 
-  client.release();
+  pool.end();
 }
 
 main().catch((err) => {
